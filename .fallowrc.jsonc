@@ -6,7 +6,8 @@
   // Скрипти з package.json fallow бачить сам. Сюди — лише те, що читає інший інструмент: конфіг Vitest для Stryker
   // (його називає stryker.config.json, а не import). Не пишіть "scripts/*.mjs": з 3.35 зірочка не заходить у підтеки,
   // і кожен прогін друкує WARN.
-  "entry": ["vitest.stryker.config.mts"],
+  // scripts/factory-tap.mjs — адаптер тестів фабрики (бонус WS9): його запускає фабрика, а не import чи package.json.
+  "entry": ["vitest.stryker.config.mts", "scripts/factory-tap.mjs"],
   // Дані для тестів скриптів шаблону — навмисно «зламані» файли.
   "ignorePatterns": ["tests/fixtures/**"],
   "ignoreDependencies": [
