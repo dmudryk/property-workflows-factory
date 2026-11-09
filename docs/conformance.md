@@ -100,3 +100,13 @@
 | AC-RUN-11 | пробіл перед назвою зі 100 символів — запуск, назва без пробілу | `src/lib/runs/rules.ts` (validateCaseName), `supabase/migrations/20261021071209_runs_clarifications.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
 | AC-RUN-10 | вибір виконавця — лише email, без імен і ролей | `src/lib/runs/rules.ts` (staffLabel), `src/app/runs/new/page.tsx`, `supabase/migrations/20261021071209_runs_clarifications.sql` (list_staff) | `src/lib/runs/launch.test.ts` | реалізовано |
 | AC-RUN-12 | зміна секцій шаблону не змінює секції запуску | `src/lib/runs/rules.ts` (groupBySection), `supabase/migrations/20261021071209_runs_clarifications.sql` (launch_run) | `src/lib/runs/launch.test.ts` | реалізовано |
+| AC-VENDOR-01 | менеджер призначає вендора виконавцем задач 3 і 4 під час запуску | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-02 | вибір виконавця — email менеджерів, адміністратора й вендора, без імен і ролей | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-03 | вендор бачить лише запуск зі своїми задачами — статус і «Your tasks: 0 of 2 done» | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-04 | вендор бачить у запуску лише свої задачі, без чужих email і прогресу запуску | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-05 | вендор позначає свою задачу — «done» і «Your tasks: 1 of 2 done» | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-06 | чужий запуск за прямим посиланням — «Run not found», без задач | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-07 | чужа задача, позначена напряму, лишається «to do» | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-08 | список шаблонів за прямим посиланням — «Not enough rights», без шаблонів | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-09 | запуск шаблону вендором напряму — запуску не створено | — | — | відкладено (чекає реалізації) |
+| AC-VENDOR-10 | вендор без задач — «No tasks assigned to you yet.», без таблиці | — | — | відкладено (чекає реалізації) |
