@@ -51,7 +51,8 @@ export default defineConfig({
   },
   projects: [
     // Вхід ролей один раз → playwright/.auth/<role>.json (у .gitignore). Без запису: тут вводиться пароль.
-    { name: "setup", testMatch: /auth\.setup\.ts$/, teardown: "cleanup", use: noRecording },
+    // vendor-world.setup.ts — синтетичний світ зрізу 3 (uat-…@example.test, запуски) для специфікацій @writes вендора.
+    { name: "setup", testMatch: /(auth|vendor-world)\.setup\.ts$/, teardown: "cleanup", use: noRecording },
     // Прибирання після всіх тестів: видаляє синтетичних uat-*@example.test і перевіряє, що нічого не лишилось.
     { name: "cleanup", testMatch: /cleanup\.teardown\.ts$/, use: noRecording },
     { name: "chromium", dependencies: ["setup"], grepInvert: /@negative-control/ },

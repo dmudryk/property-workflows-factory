@@ -16,7 +16,15 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * on delete cascade (інакше Auth відповідає «Database error deleting user»). У демо: leave_requests.employee_id.
  * Якщо таких таблиць немає (або всі FK — cascade), лишіть порожнім.
  */
-const OWNED_ROWS: { table: string; column: string }[] = [];
+// У нас FK на public.profiles без on delete cascade: runs.manager_id, run_tasks.assignee_id, run_tasks.done_by
+// (20261020123813_runs_launch.sql). Синтетичний світ зрізу 3 (support/vendor-world.ts) — запуски менеджера uat-…-a з
+// задачами вендорів uat-…-v…: спершу запуски користувача (їхні задачі йдуть каскадом), потім його задачі в запусках
+// інших синтетичних користувачів. Запусків і задач справжніх акаунтів синтетичні користувачі не мають.
+const OWNED_ROWS: { table: string; column: string }[] = [
+  { table: "runs", column: "manager_id" },
+  { table: "run_tasks", column: "assignee_id" },
+  { table: "run_tasks", column: "done_by" },
+];
 
 /** Лише такі адреси прибирання має право видалити: uat-<run>[-<суфікс>]@example.test. */
 export const UAT_EMAIL = /^uat-[0-9a-z-]+@example\.test$/;
