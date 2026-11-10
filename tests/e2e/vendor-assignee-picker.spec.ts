@@ -1,27 +1,29 @@
 // AC-VENDOR-02 — вибір виконавця під час запуску показує email менеджерів, адміністратора й вендора, без імен і ролей.
 // Лише читання: форму запуску відкрито, але не надіслано. Акаунти — ті самі, що в accounts.zip для PM:
-// A — manager.a@example.test, B — manager.b@example.test, адміністратор — admin@example.test, V — vendor@example.test.
+// A — manager.a@example.test, B — manager.b@example.test, адміністратор — admin@example.test. У двійнику демо-акаунта
+// vendor@example.test немає (supabase/demo-users.json фабриці змінювати не можна), тож V — синтетичний вендор світу uat-…-v.
 // Імена в профілях цих акаунтів (supabase/demo-users.json) — саме те, чого в списку бути не має. Список довгий
 // (на проді є й інші акаунти, а під час прогону — синтетичні uat-…), тож вікно вище, щоб пункти вмістились на кадрі.
 import { readFileSync } from "node:fs";
 import { expect, test } from "@playwright/test";
 import { attachRuntimeErrors, given, thenStep, when } from "./support/uat";
-import { TEMPLATE_NAME } from "./support/vendor-world";
+import { TEMPLATE_NAME, readWorld } from "./support/vendor-world";
 
 test.use({ storageState: "playwright/.auth/manager_a.json", viewport: { width: 1280, height: 1200 } });
 
 const A = "manager.a@example.test";
-const SEEN = ["manager.b@example.test", "admin@example.test", "vendor@example.test"];
 const DEMO_USERS = JSON.parse(readFileSync("supabase/demo-users.json", "utf8")) as { email: string; full_name: string }[];
-const NAMES = DEMO_USERS.filter((u) => SEEN.includes(u.email)).map((u) => u.full_name);
+// Імена профілів B й адміністратора (у синтетичного вендора імені немає).
+const NAMES = DEMO_USERS.filter((u) => ["manager.b@example.test", "admin@example.test"].includes(u.email)).map((u) => u.full_name);
 const SELF = "Me (run manager)";
 
 test.afterEach(async ({ page }) => attachRuntimeErrors(page));
 
 test(
   "AC-VENDOR-02: менеджер A відкриває вибір виконавця — email B, адміністратора й V, без імен, ролей і інших даних профілю",
-  { tag: ["@uat"], annotation: { type: "ac", description: "AC-VENDOR-02" } },
+  { tag: ["@uat", "@writes"], annotation: { type: "ac", description: "AC-VENDOR-02" } },
   async ({ page }) => {
+    const SEEN = ["manager.b@example.test", "admin@example.test", readWorld().users.v.email];
     await given(
       `managers A (${A}) and B (${SEEN[0]}), an administrator (${SEEN[1]}) and vendor V (${SEEN[2]}), and A launching a template`,
       async () => {
@@ -62,7 +64,7 @@ test(
           await expect(page.getByRole("option", { name: email, exact: true })).toBeInViewport();
         }
         expect(labels.filter((label) => label !== SELF).every((label) => /^[\w.+-]+@example\.test$/.test(label))).toBe(true);
-        expect(NAMES).toHaveLength(3);
+        expect(NAMES).toHaveLength(2);
         const body = await page.locator("body").innerText();
         for (const name of NAMES) expect(body).not.toContain(name);
       },
