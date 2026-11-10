@@ -54,7 +54,8 @@ export async function markDone(formData: FormData) {
   if (!runId || !taskId) redirect("/runs");
 
   // AC-TASK-04, AC-TASK-16: остання обов'язкова задача — лише після підтвердження («This cannot be undone»).
-  if (actor && formData.get("confirmed") !== "1") {
+  // Вендор бачить лише свої задачі (RLS), тож «остання обов'язкова» за його рядками була б хибною — для нього без підтвердження.
+  if (actor && actor.role !== "vendor" && formData.get("confirmed") !== "1") {
     const { data: tasks } = await supabase.from("run_tasks").select("id, required, status").eq("run_id", runId);
     const list = (tasks ?? []).map((t) => ({ id: t.id, required: t.required, status: t.status as "to_do" | "done" }));
     if (needsConfirmation(list, taskId)) redirect(`/runs/${runId}?confirm=${encodeURIComponent(taskId)}`);

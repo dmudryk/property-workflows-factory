@@ -20,7 +20,7 @@ export async function requireActor() {
 
   const role = profile?.role;
   const actor: Actor | null =
-    role === "manager" || role === "admin" ? { id: claims.sub, role } : null;
+    role === "manager" || role === "admin" || role === "vendor" ? { id: claims.sub, role } : null;
 
   return { supabase, actor, email: profile?.email ?? claims.email ?? null };
 }

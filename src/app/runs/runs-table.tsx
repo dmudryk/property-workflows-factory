@@ -21,7 +21,7 @@ const CELL = "px-2 py-3 sm:px-4";
 
 // Таблиця списку запусків: вкладки статусу з кількістю й пошук за назвою випадку (на клієнті, над рядками сторінки).
 // Рядок відкривається кліком будь-де (RowLink); шеврон — лише іконка, тож для клавіатури це одне посилання.
-export function RunsTable({ runs }: { runs: RunListItem[] }) {
+export function RunsTable({ runs, vendor = false }: { runs: RunListItem[]; vendor?: boolean }) {
   const [filter, setFilter] = useState<RunFilter>("all");
   const [query, setQuery] = useState("");
   const counts = countByStatus(runs);
@@ -81,14 +81,16 @@ export function RunsTable({ runs }: { runs: RunListItem[] }) {
               <TableRow key={run.id} data-testid="run-row" className={`${ROW_LINK_ROW} border-border/60 hover:bg-muted`}>
                 <TableCell className={`${CELL} whitespace-normal`}>
                   <RowLink href={`/runs/${run.id}`}>{run.caseName}</RowLink>
-                  <span className="block text-sm text-muted-foreground">{run.templateName}</span>
+                  {vendor ? null : <span className="block text-sm text-muted-foreground">{run.templateName}</span>}
                 </TableCell>
                 <TableCell className={CELL}>
                   <StatusBadge data-testid="run-status" kind={run.status} />
                 </TableCell>
                 <TableCell className={CELL}>
                   <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:gap-3">
-                    <ProgressBar kind={run.status} percent={progressPercent(run)} className="sm:w-24" />
+                    {vendor ? null : (
+                      <ProgressBar kind={run.status} percent={progressPercent(run)} className="sm:w-24" />
+                    )}
                     <span data-testid="run-progress" className="text-sm font-medium tabular-nums">
                       {run.progress}
                     </span>

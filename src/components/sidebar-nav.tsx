@@ -12,12 +12,13 @@ const ITEMS = [
 
 // Навігація бічної панелі (DESIGN.md, розділ 4): пункти 44px з іконкою; поточний розділ — тло accent, напівжирний
 // текст і aria-current. Коли панель над вмістом (контейнер AppShell < 50rem), пункти стоять у рядок.
-export function SidebarNav({ labelledBy }: { labelledBy?: string }) {
+export function SidebarNav({ labelledBy, showTemplates = true }: { labelledBy?: string; showTemplates?: boolean }) {
   const pathname = usePathname();
+  const items = showTemplates ? ITEMS : ITEMS.filter((item) => item.href !== "/templates");
 
   return (
     <nav aria-labelledby={labelledBy} aria-label={labelledBy ? undefined : "Main"} className="flex gap-1 @min-[50rem]:flex-col">
-      {ITEMS.map(({ href, label, icon: Icon }) => {
+      {items.map(({ href, label, icon: Icon }) => {
         const current = pathname === href || pathname.startsWith(`${href}/`);
         return (
           <Link

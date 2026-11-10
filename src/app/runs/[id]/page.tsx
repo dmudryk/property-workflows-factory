@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { NotFoundNotice } from "@/components/not-found-notice";
 import { StatusBadge } from "@/components/status-badge";
 import { SubmitButton } from "@/components/submit-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -28,27 +29,22 @@ export default async function RunPage({ params, searchParams }: PageProps<"/runs
     .select("id, case_name, template_name, template_version, status, manager_id")
     .eq("id", id)
     .maybeSingle();
-  if (!run) {
-    return (
-      <main className="flex flex-col gap-4">
-        <Link href="/runs" className="text-sm underline-offset-4 hover:underline">
-          Back to runs
-        </Link>
-        <p role="alert" data-testid="run-not-found" className="text-lg font-semibold">
-          {MSG_RUN_NOT_FOUND}
-        </p>
-      </main>
-    );
-  }
+  const notFound = (
+    <NotFoundNotice backHref="/runs" backLabel="Back to runs" message={MSG_RUN_NOT_FOUND} testId="run-not-found" />
+  );
+  if (!run) return notFound;
 
-  const [{ data: rows }, { data: staff }] = await Promise.all([
+  const vendor = actor?.role === "vendor";
+  const [{ data: allRows }, { data: staff }] = await Promise.all([
     supabase
       .from("run_tasks")
       .select("id, section_name, name, required, position, assignee_id, status")
       .eq("run_id", id)
       .order("position"),
-    supabase.rpc("list_staff"),
+    vendor ? Promise.resolve({ data: null }) : supabase.rpc("list_staff"),
   ]);
+  const rows = vendor ? (allRows ?? []).filter((t) => t.assignee_id === actor?.id) : allRows;
+  if (vendor && rows?.length === 0) return notFound;
   const people = new Map((staff ?? []).map((member) => [member.id, member]));
   const tasks: RunTaskView[] = (rows ?? []).map((t) => ({
     id: t.id,
@@ -71,14 +67,20 @@ export default async function RunPage({ params, searchParams }: PageProps<"/runs
       </Link>
       <h1 className="text-2xl font-semibold">{run.case_name}</h1>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        <span>{run.template_name}</span>
-        <span data-testid="template-version" className="tabular-nums">
-          {templateVersionLabel(run.template_version)}
-        </span>
+        {vendor ? null : (
+          <>
+            <span>{run.template_name}</span>
+            <span data-testid="template-version" className="tabular-nums">
+              {templateVersionLabel(run.template_version)}
+            </span>
+          </>
+        )}
         <StatusBadge data-testid="run-status" kind={runStatusKind(run.status)} />
-        <span>
-          Run manager: <span data-testid="run-manager">{staffLabel(people.get(run.manager_id))}</span>
-        </span>
+        {vendor ? null : (
+          <span>
+            Run manager: <span data-testid="run-manager">{staffLabel(people.get(run.manager_id))}</span>
+          </span>
+        )}
       </div>
     </>
   );
@@ -115,7 +117,7 @@ export default async function RunPage({ params, searchParams }: PageProps<"/runs
 
   return (
     <main className="flex flex-col gap-6">
-      <RunTasks runId={run.id} tasks={tasks} header={header} notices={notices} />
+      <RunTasks vendor={vendor} runId={run.id} tasks={tasks} header={header} notices={notices} />
     </main>
   );
 }

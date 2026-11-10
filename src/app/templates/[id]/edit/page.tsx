@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { NotEnoughRights } from "@/components/not-enough-rights";
+import { NotFoundNotice } from "@/components/not-found-notice";
 import { canManageTemplates, requireActor } from "@/lib/auth/actor";
 import { EMPTY_CONTENT, parseContent } from "@/lib/templates/content";
 import { TemplateEditor } from "./template-editor";
@@ -16,18 +16,7 @@ export default async function EditTemplatePage({ params }: PageProps<"/templates
     supabase.from("templates").select("id, name, current_version, current_content").eq("id", id).maybeSingle(),
     supabase.from("template_drafts").select("content").eq("template_id", id).maybeSingle(),
   ]);
-  if (!tpl) {
-    return (
-      <main className="flex flex-col gap-4">
-        <Link href="/templates" className="text-sm underline-offset-4 hover:underline">
-          Back to templates
-        </Link>
-        <p role="alert" className="text-lg font-semibold">
-          Template not found
-        </p>
-      </main>
-    );
-  }
+  if (!tpl) return <NotFoundNotice backHref="/templates" backLabel="Back to templates" message="Template not found" />;
 
   const content = parseContent(draft?.content ?? tpl.current_content) ?? EMPTY_CONTENT;
 
