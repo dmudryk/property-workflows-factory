@@ -51,7 +51,9 @@ afterAll(() => {
   for (const dir of temps) rmSync(dir, { recursive: true, force: true });
 });
 
-describe("scripts/check-migration-order.mjs", () => {
+// Кожен кейс кілька разів запускає git у тимчасовому репозиторії. На Windows під навантаженням паралельних тестів
+// PGlite це довше за стандартні 5 с (ворота фабрики двічі падали на таймауті), тож ліміт часу — 30 с; твердження ті самі.
+describe("scripts/check-migration-order.mjs", { timeout: 30_000 }, () => {
   it("passes when the PR migration is newer than the newest on main", () => {
     const { code, out } = run("newer");
     expect(code).toBe(0);
