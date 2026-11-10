@@ -1,4 +1,8 @@
-Прод: https://property-workflows-bravo16.vercel.app
+Прод двійника: https://property-workflows-factory-gamma.vercel.app
+
+> **Двійник для фабрики (бонус WS9); прод — окремий.** Основне репо — https://github.com/dmudryk/property-workflows
+> (прод https://property-workflows-bravo16.vercel.app). Тут зріз 3 будує фабрика курсу автономно: свій Supabase, свій
+> Vercel, автозлиття PR після воріт і required checks; основного проду фабрика не торкається.
 
 # Шаблон проєкту розробника: Next.js + Supabase + OpenSpec
 
