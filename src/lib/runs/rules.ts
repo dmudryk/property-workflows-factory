@@ -1,7 +1,7 @@
 // Правила зрізу WS6 (openspec/specs/workflow-runs, openspec/specs/run-tasks) — чисті функції без бази.
 // Server actions викликають їх до звернення до Supabase; ті самі права й обмеження дублює база (RLS, check, функції).
 
-export type Role = "manager" | "admin";
+export type Role = "manager" | "admin" | "vendor";
 
 export type Actor = { id: string; role: Role };
 
@@ -173,6 +173,13 @@ export function runStatusLabel(status: string): string {
 export function progressLabel(tasks: readonly { status: string }[]): string {
   const done = tasks.filter((t) => t.status === "done").length;
   return `${done} of ${tasks.length} done`;
+}
+
+// AC-VENDOR-03, AC-VENDOR-05: «Your tasks: N of K done» — лише задачі userId серед переданих.
+export function yourTasksLabel(tasks: readonly { assigneeId: string; status: string }[], userId: string): string {
+  const own = tasks.filter((t) => t.assigneeId === userId);
+  const done = own.filter((t) => t.status === "done").length;
+  return `Your tasks: ${done} of ${own.length} done`;
 }
 
 // AC-TASK-06: адміністратор бачить усі запуски; менеджер — ті, де він менеджер запуску або виконавець хоча б однієї

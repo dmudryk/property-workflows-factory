@@ -3,7 +3,9 @@ import Link from "next/link";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { buttonVariants } from "@/components/ui/button";
+import { NotEnoughRights } from "@/components/not-enough-rights";
 import { canManageTemplates, requireActor } from "@/lib/auth/actor";
+import { canSeeTemplates } from "@/lib/auth/roles";
 import { templatesEmptyState } from "@/lib/templates/empty-states";
 import { TemplatesTable } from "./templates-table";
 
@@ -12,6 +14,7 @@ import { TemplatesTable } from "./templates-table";
 // адміністратору: незбережені зміни менеджер не читає (template_drafts_select_admin).
 export default async function TemplatesPage() {
   const { supabase, actor } = await requireActor();
+  if (!canSeeTemplates(actor)) return <NotEnoughRights backHref="/runs" backLabel="Back to runs" />;
   const admin = canManageTemplates(actor);
 
   const { data: templates } = await supabase.from("templates").select("id, name, current_version").order("name");

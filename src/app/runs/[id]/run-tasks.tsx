@@ -5,7 +5,7 @@ import { useOptimistic } from "react";
 import { StatusBadge } from "@/components/status-badge";
 import { SubmitButton } from "@/components/submit-button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { groupBySection, needsConfirmation, progressLabel, requiredLabel, type TaskStatus } from "@/lib/runs/rules";
+import { groupBySection, needsConfirmation, progressLabel, requiredLabel, yourTasksLabel, type TaskStatus } from "@/lib/runs/rules";
 import { markDone } from "../actions";
 
 export type RunTaskView = {
@@ -28,7 +28,9 @@ export function RunTasks({
   tasks,
   header,
   notices,
+  vendor = false,
 }: {
+  vendor?: boolean;
   runId: string;
   tasks: RunTaskView[];
   header: React.ReactNode;
@@ -50,7 +52,12 @@ export function RunTasks({
       <div className="flex flex-col gap-2">
         {header}
         <p data-testid="run-progress" className="text-lg font-semibold tabular-nums">
-          {progressLabel(shown)}
+          {vendor
+            ? yourTasksLabel(
+                shown.map((t) => ({ assigneeId: "self", status: t.status })),
+                "self",
+              )
+            : progressLabel(shown)}
         </p>
       </div>
 
@@ -73,9 +80,11 @@ export function RunTasks({
                 >
                   <span className="flex flex-col">
                     <span className="font-medium">{task.name}</span>
-                    <span data-testid="task-assignee" className="text-sm text-muted-foreground">
-                      {task.assigneeLabel}
-                    </span>
+                    {vendor ? null : (
+                      <span data-testid="task-assignee" className="text-sm text-muted-foreground">
+                        {task.assigneeLabel}
+                      </span>
+                    )}
                   </span>
                   <span className="flex items-center gap-3">
                     <span data-testid="task-required" className="text-sm text-muted-foreground">

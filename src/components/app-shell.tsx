@@ -52,7 +52,7 @@ export function AppShell({
             <p id="sidebar-nav-label" className="px-3 text-sm font-medium tracking-wider text-muted-foreground uppercase">
               Workspace
             </p>
-            <SidebarNav labelledBy="sidebar-nav-label" />
+            <SidebarNav labelledBy="sidebar-nav-label" showTemplates={user.role !== "vendor"} />
           </div>
           <div className="flex flex-col gap-3 rounded-xl border bg-background p-3 shadow-xs @min-[50rem]:mt-auto">
             <div className="flex min-w-0 items-center gap-3">

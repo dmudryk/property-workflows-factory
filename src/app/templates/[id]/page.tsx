@@ -8,7 +8,10 @@ import { StatusBadge } from "@/components/status-badge";
 import { Badge } from "@/components/ui/badge";
 import { buttonVariants } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { NotEnoughRights } from "@/components/not-enough-rights";
+import { NotFoundNotice } from "@/components/not-found-notice";
 import { canManageTemplates, requireActor } from "@/lib/auth/actor";
+import { canSeeTemplates } from "@/lib/auth/roles";
 import { cn } from "@/lib/utils";
 import { EMPTY_CONTENT, parseContent, summarizeContent } from "@/lib/templates/content";
 import { versionSavedMessage } from "@/lib/templates/editor-state";
@@ -22,6 +25,7 @@ export default async function TemplatePage({ params, searchParams }: PageProps<"
   const { id } = await params;
   const { saved: savedParam } = await searchParams;
   const { supabase, actor } = await requireActor();
+  if (!canSeeTemplates(actor)) return <NotEnoughRights backHref="/runs" backLabel="Back to runs" />;
   const admin = canManageTemplates(actor);
 
   const { data: tpl } = await supabase
@@ -29,18 +33,7 @@ export default async function TemplatePage({ params, searchParams }: PageProps<"
     .select("id, name, current_version, current_content")
     .eq("id", id)
     .maybeSingle();
-  if (!tpl) {
-    return (
-      <main className="flex flex-col gap-4">
-        <Link href="/templates" className="text-sm underline-offset-4 hover:underline">
-          Back to templates
-        </Link>
-        <p role="alert" className="text-lg font-semibold">
-          Template not found
-        </p>
-      </main>
-    );
-  }
+  if (!tpl) return <NotFoundNotice backHref="/templates" backLabel="Back to templates" message="Template not found" />;
 
   const { data: draft } = admin
     ? await supabase.from("template_drafts").select("template_id").eq("template_id", id).maybeSingle()
