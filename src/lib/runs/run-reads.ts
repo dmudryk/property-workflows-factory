@@ -23,12 +23,20 @@ export async function listRuns(supabase: Supabase, vendorId: string | null): Pro
       .select("id, case_name, template_name, status, created_at, run_tasks(status, assignee_id)");
     return data ?? [];
   }
-  const [{ data: runs }, { data: tasks }] = await Promise.all([supabase.rpc("vendor_runs", {}), supabase.rpc("vendor_tasks", {})]);
-  return (runs ?? []).map((run) => ({
+  const [runsRes, tasksRes] = await Promise.all([supabase.rpc("vendor_runs", {}), supabase.rpc("vendor_tasks", {})]);
+  const runs = vendorData(runsRes);
+  const tasks = vendorData(tasksRes);
+  return runs.map((run) => ({
     ...run,
     // vendor_tasks віддає лише задачі самого вендора — виконавець кожної він сам.
-    run_tasks: (tasks ?? []).filter((task) => task.run_id === run.id).map((task) => ({ status: task.status, assignee_id: vendorId })),
+    run_tasks: tasks.filter((task) => task.run_id === run.id).map((task) => ({ status: task.status, assignee_id: vendorId })),
   }));
+}
+
+// Збій будь-якого з двох запитів — помилка сторінки, а не «Your tasks: 0 of 0 done» чи запуск без задач.
+function vendorData<T>({ data, error }: { data: T[] | null; error: { message: string } | null }): T[] {
+  if (error) throw new Error(`Не вдалося прочитати запуски вендора: ${error.message}`);
+  return data ?? [];
 }
 
 type RunTaskRow = {
@@ -53,12 +61,13 @@ export type RunPageData =
 /** Запуск і його задачі; null — запуску немає або його не видно (сторінка — «Run not found»). */
 export async function loadRun(supabase: Supabase, runId: string, vendorId: string | null): Promise<RunPageData | null> {
   if (vendorId) {
-    const [{ data: runs }, { data: tasks }] = await Promise.all([
+    const [runsRes, tasksRes] = await Promise.all([
       supabase.rpc("vendor_runs", { p_run_id: runId }),
       supabase.rpc("vendor_tasks", { p_run_id: runId }),
     ]);
-    const run = runs?.[0];
-    return run ? { vendor: true, run, tasks: (tasks ?? []).map((task) => ({ ...task, assignee_id: vendorId })) } : null;
+    const run = vendorData(runsRes)[0];
+    const tasks = vendorData(tasksRes);
+    return run ? { vendor: true, run, tasks: tasks.map((task) => ({ ...task, assignee_id: vendorId })) } : null;
   }
   const [{ data: run }, { data: tasks }] = await Promise.all([
     supabase.from("runs").select("id, case_name, template_name, template_version, status, manager_id").eq("id", runId).maybeSingle(),
