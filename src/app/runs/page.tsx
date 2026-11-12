@@ -8,6 +8,7 @@ import { runsEmptyState, runsListView } from "@/lib/runs/list-view";
 import { newestFirst, progressLabel, yourTasksLabel } from "@/lib/runs/rules";
 import { runStatusKind } from "@/lib/status";
 import { requireActor } from "@/lib/auth/actor";
+import { listRuns } from "@/lib/runs/run-reads";
 import { RunsTable } from "./runs-table";
 
 // Список запусків: у кожному рядку — випадок, шаблон, статус і прогрес «N of M done» (AC-TASK-09, AC-TASK-13,
@@ -17,12 +18,11 @@ import { RunsTable } from "./runs-table";
 export default async function RunsPage() {
   const { supabase, actor } = await requireActor();
   const vendor = actor?.role === "vendor";
-  // Вендор: без назви шаблону; рядки лише із запусків, де є його задачі (AC-VENDOR-03).
-  const { data: rows } = await supabase
-    .from("runs")
-    .select("id, case_name, template_name, status, created_at, run_tasks(status, assignee_id)");
+  // Вендор: без назви шаблону; рядки лише із запусків, де є його задачі (AC-VENDOR-03). Таблиці runs і run_tasks
+  // вендору закрито — рядки приходять з функцій бази vendor_runs і vendor_tasks, де назви шаблону немає (listRuns).
+  const rows = await listRuns(supabase, vendor && actor ? actor.id : null);
   const runs = newestFirst(
-    (rows ?? [])
+    rows
       .filter((r) => !vendor || (r.run_tasks ?? []).some((t) => t.assignee_id === actor?.id))
       .map((r) => ({ ...r, createdAt: r.created_at })),
   ).map((run): RunListItem => {
@@ -30,7 +30,7 @@ export default async function RunsPage() {
     return {
       id: run.id,
       caseName: run.case_name,
-      templateName: vendor ? "" : run.template_name,
+      templateName: run.template_name ?? "",
       status: runStatusKind(run.status),
       ...progressCounts(own),
       progress: vendor

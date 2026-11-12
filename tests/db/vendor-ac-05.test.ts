@@ -32,8 +32,8 @@ describe("vendor-access: база", () => {
     expect((await runTasks(t, runId))[2].status).toBe("done");
     const mine = await t.asUser<{ status: string }>(
       V,
-      "select status from public.run_tasks where run_id = $1 and assignee_id = $2 order by position",
-      [runId, V],
+      "select status from public.vendor_tasks($1) order by position",
+      [runId],
     );
     expect(mine.map((task) => task.status)).toEqual(["done", "to_do"]);
   }, 60_000);

@@ -6,6 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { buttonVariants } from "@/components/ui/button";
 import { MSG_CANNOT_UNDO, MSG_RUN_NOT_FOUND, canMarkDone, needsConfirmation, staffLabel } from "@/lib/runs/rules";
 import { requireActor } from "@/lib/auth/actor";
+import { loadRun } from "@/lib/runs/run-reads";
 import { runStatusKind, taskStatusKind } from "@/lib/status";
 import { templateVersionLabel } from "@/lib/templates/format";
 import { markDone } from "../actions";
@@ -24,29 +25,21 @@ export default async function RunPage({ params, searchParams }: PageProps<"/runs
   const message = messageFor(RUN_ERRORS, error);
   const { supabase, actor } = await requireActor();
 
-  const { data: run } = await supabase
-    .from("runs")
-    .select("id, case_name, template_name, template_version, status, manager_id")
-    .eq("id", id)
-    .maybeSingle();
+  const vendor = actor?.role === "vendor";
+  // Вендору таблиці runs і run_tasks закрито — запуск і задачі з функцій бази vendor_runs і vendor_tasks, де шаблону,
+  // версії й менеджера немає (loadRun).
+  const loaded = await loadRun(supabase, id, vendor && actor ? actor.id : null);
   const notFound = (
     <NotFoundNotice backHref="/runs" backLabel="Back to runs" message={MSG_RUN_NOT_FOUND} testId="run-not-found" />
   );
-  if (!run) return notFound;
+  if (!loaded) return notFound;
+  const { run, tasks: allRows } = loaded;
+  const staffRun = loaded.vendor ? null : loaded.run;
 
-  const vendor = actor?.role === "vendor";
-  const [{ data: allRows }, { data: staff }] = await Promise.all([
-    supabase
-      .from("run_tasks")
-      .select("id, section_name, name, required, position, assignee_id, status")
-      .eq("run_id", id)
-      .order("position"),
-    vendor ? Promise.resolve({ data: null }) : supabase.rpc("list_staff"),
-  ]);
-  const rows = vendor ? (allRows ?? []).filter((t) => t.assignee_id === actor?.id) : allRows;
-  if (vendor && rows?.length === 0) return notFound;
+  // Вендору — лише його задачі (vendor_tasks); запуск без його задач vendor_runs не віддає — тоді «Run not found» вище.
+  const { data: staff } = vendor ? { data: null } : await supabase.rpc("list_staff");
   const people = new Map((staff ?? []).map((member) => [member.id, member]));
-  const tasks: RunTaskView[] = (rows ?? []).map((t) => ({
+  const tasks: RunTaskView[] = allRows.map((t) => ({
     id: t.id,
     sectionName: t.section_name,
     name: t.name,
@@ -54,35 +47,14 @@ export default async function RunPage({ params, searchParams }: PageProps<"/runs
     position: t.position,
     status: taskStatusKind(t.status),
     assigneeLabel: staffLabel(people.get(t.assignee_id)),
-    canMark: actor ? canMarkDone(actor, { managerId: run.manager_id }, { assigneeId: t.assignee_id }) : false,
+    canMark: actor ? canMarkDone(actor, { managerId: staffRun?.manager_id ?? "" }, { assigneeId: t.assignee_id }) : false,
   }));
 
   const confirmTask =
     typeof confirm === "string" && needsConfirmation(tasks, confirm) ? tasks.find((t) => t.id === confirm) : undefined;
 
   const header = (
-    <>
-      <Link href="/runs" className="text-sm underline-offset-4 hover:underline">
-        Back to runs
-      </Link>
-      <h1 className="text-2xl font-semibold">{run.case_name}</h1>
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
-        {vendor ? null : (
-          <>
-            <span>{run.template_name}</span>
-            <span data-testid="template-version" className="tabular-nums">
-              {templateVersionLabel(run.template_version)}
-            </span>
-          </>
-        )}
-        <StatusBadge data-testid="run-status" kind={runStatusKind(run.status)} />
-        {vendor ? null : (
-          <span>
-            Run manager: <span data-testid="run-manager">{staffLabel(people.get(run.manager_id))}</span>
-          </span>
-        )}
-      </div>
-    </>
+    <RunHeader caseName={run.case_name} status={run.status} staffRun={staffRun} managerLabel={staffRun ? staffLabel(people.get(staffRun.manager_id)) : ""} />
   );
 
   const notices = (
@@ -119,5 +91,44 @@ export default async function RunPage({ params, searchParams }: PageProps<"/runs
     <main className="flex flex-col gap-6">
       <RunTasks vendor={vendor} runId={run.id} tasks={tasks} header={header} notices={notices} />
     </main>
+  );
+}
+
+// Шапка сторінки запуску. Вендору (staffRun = null) — лише назва випадку й статус: шаблону, версії й менеджера в його
+// даних немає (loadRun).
+function RunHeader({
+  caseName,
+  status,
+  staffRun,
+  managerLabel,
+}: {
+  caseName: string;
+  status: string;
+  staffRun: { template_name: string; template_version: number } | null;
+  managerLabel: string;
+}) {
+  return (
+    <>
+      <Link href="/runs" className="text-sm underline-offset-4 hover:underline">
+        Back to runs
+      </Link>
+      <h1 className="text-2xl font-semibold">{caseName}</h1>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
+        {staffRun ? (
+          <>
+            <span>{staffRun.template_name}</span>
+            <span data-testid="template-version" className="tabular-nums">
+              {templateVersionLabel(staffRun.template_version)}
+            </span>
+          </>
+        ) : null}
+        <StatusBadge data-testid="run-status" kind={runStatusKind(status)} />
+        {staffRun ? (
+          <span>
+            Run manager: <span data-testid="run-manager">{managerLabel}</span>
+          </span>
+        ) : null}
+      </div>
+    </>
   );
 }

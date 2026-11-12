@@ -28,7 +28,7 @@ describe("vendor-access: база", () => {
 
     const runs = await t.asUser<{ id: string; case_name: string; status: string }>(
       V,
-      "select id, case_name, status from public.runs order by created_at",
+      "select id, case_name, status from public.vendor_runs() order by created_at",
     );
     expect(runs.map((r) => [r.case_name, runStatusLabel(r.status)])).toEqual([["Apartment 12, move-in", "in progress"]]);
     expect(runs[0].id).toBe(moveIn);
@@ -36,8 +36,8 @@ describe("vendor-access: база", () => {
     const [mine] = await t.asUser<{ done: number; total: number }>(
       V,
       `select count(*) filter (where status = 'done')::int as done, count(*)::int as total
-       from public.run_tasks where run_id = $1 and assignee_id = $2`,
-      [moveIn, V],
+       from public.vendor_tasks($1)`,
+      [moveIn],
     );
     expect(mine).toEqual({ done: 0, total: 2 });
   }, 60_000);
