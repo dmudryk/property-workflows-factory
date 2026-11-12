@@ -20,7 +20,7 @@ describe("vendor-access", () => {
 
     const seen = await t.asUser<{ name: string; section_name: string; required: boolean; status: string }>(
       V,
-      "select name, section_name, required, status from public.run_tasks where run_id = $1 order by position",
+      "select name, section_name, required, status from public.vendor_tasks($1) order by position",
       [runId],
     );
     expect(seen.map((task) => [task.name, task.section_name, requiredLabel(task.required), taskStatusLabel(task.status)])).toEqual([
@@ -31,7 +31,7 @@ describe("vendor-access", () => {
     // Прогрес усього запуску («N of 5») порахувати нема з чого: з 5 задач запуску V доступні лише 2 його.
     const [{ total }] = await t.asUser<{ total: number }>(
       V,
-      "select count(*)::int as total from public.run_tasks where run_id = $1",
+      "select count(*)::int as total from public.vendor_tasks($1)",
       [runId],
     );
     expect(total).toBe(2);
